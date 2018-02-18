@@ -13,20 +13,26 @@ namespace MyTunes
 
         public static async Task<IEnumerable<Song>> Load()
         {
-            using (var reader = new StreamReader(OpenData()))
+            using (var reader = new StreamReader(await OpenData()))
             {
                 return JsonConvert.DeserializeObject<List<Song>>(await reader.ReadToEndAsync());
             }
         }
 
-        private static Stream OpenData()
+        private static async Task<Stream> OpenData()
         {
+#if WINDOWS_UWP
+			var sf = await Windows.ApplicationModel.Package.Current.InstalledLocation.GetFileAsync(Filename);
+			return await sf.OpenStreamForReadAsync();
+#elif __IOS__
+            return File.OpenRead(Filename);
+#elif __ANDROID__
+			return Android.App.Application.Context.Assets.Open(Filename);
+#else
             // TODO: add code to open file here.
-            #if __ANDROID__
-		        return Android.App.Application.Context.Assets.Open(Filename);
-            #else
-                return null;
-            #endif
+	
+            return null;
+#endif
         }
     }
 }
